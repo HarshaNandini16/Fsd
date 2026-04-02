@@ -2,119 +2,127 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Animated Bus Booking</title>
+<title>SmartBus Pro</title>
 
 <style>
 body {
     margin:0;
-    font-family:'Segoe UI';
-    background:#eef2f7;
+    font-family:'Poppins', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color:#333;
 }
 
 /* HEADER */
 header {
-    background:#1e2a38;
-    color:white;
-    padding:15px;
     text-align:center;
-    font-size:24px;
-    animation: slideDown 0.8s ease;
+    padding:20px;
+    color:white;
+    font-size:28px;
+    font-weight:bold;
 }
 
 /* CONTAINER */
 .container {
     width:90%;
     margin:auto;
-    margin-top:20px;
 }
 
 /* CARD */
 .card {
-    background:white;
-    padding:15px;
-    border-radius:12px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    padding:20px;
+    border-radius:15px;
     margin-bottom:20px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.1);
-    animation: fadeIn 0.8s ease;
+    box-shadow:0 8px 25px rgba(0,0,0,0.2);
+    animation: fadeIn 0.6s ease;
 }
 
-/* INPUTS */
-input,button {
+/* INPUT */
+input, button {
     padding:10px;
     margin:5px;
-    border-radius:6px;
-    border:1px solid #ccc;
+    border-radius:8px;
+    border:none;
 }
 
-/* BUTTON */
 button {
-    background:#3498db;
+    background:#ff6b6b;
     color:white;
     cursor:pointer;
-    transition: all 0.3s ease;
+    transition:0.3s;
 }
 button:hover {
-    background:#2980b9;
-    transform: scale(1.05);
+    transform:scale(1.05);
+    background:#ff4757;
 }
 
 /* BUS CARD */
 .bus {
     display:flex;
     justify-content:space-between;
-    padding:12px;
-    border-bottom:1px solid #eee;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:10px;
+    background:#f1f2f6;
     transition:0.3s;
 }
 .bus:hover {
-    background:#f0f8ff;
-    transform: translateX(5px);
+    transform:translateY(-5px);
 }
 
 /* SEATS */
-.seat-layout { display:none; }
-
 .row {
     display:flex;
     justify-content:center;
-    margin:5px;
+    margin:6px;
 }
 
 .seat {
     width:40px;
     height:40px;
-    margin:4px;
-    background:#ddd;
+    margin:5px;
+    border-radius:6px;
+    background:#dfe4ea;
     text-align:center;
     line-height:40px;
-    border-radius:6px;
     cursor:pointer;
-    transition: all 0.3s ease;
+    transition:0.3s;
 }
 
-/* Seat Animations */
 .seat:hover {
-    transform: scale(1.2);
+    transform:scale(1.2);
 }
 
 .selected {
-    background:green;
+    background:#2ed573;
     color:white;
-    animation: pop 0.3s ease;
 }
 
 .booked {
-    background:red;
+    background:#ff4757;
     color:white;
+    cursor:not-allowed;
 }
 
-.aisle {
-    width:20px;
+.aisle { width:20px; }
+
+/* LEGEND */
+.legend {
+    display:flex;
+    justify-content:space-around;
+    margin-top:10px;
+}
+.legend div {
+    display:flex;
+    align-items:center;
+    gap:5px;
 }
 
 /* TICKET */
 .ticket {
-    background:#dff9fb;
+    background:#2ed573;
+    color:white;
     padding:15px;
     border-radius:10px;
     animation: slideUp 0.5s ease;
@@ -125,23 +133,12 @@ button:hover {
 
 /* ANIMATIONS */
 @keyframes fadeIn {
-    from {opacity:0;}
-    to {opacity:1;}
+    from {opacity:0; transform:translateY(20px);}
+    to {opacity:1; transform:translateY(0);}
 }
-
-@keyframes slideDown {
-    from {transform:translateY(-50px); opacity:0;}
-    to {transform:translateY(0); opacity:1;}
-}
-
 @keyframes slideUp {
-    from {transform:translateY(50px); opacity:0;}
-    to {transform:translateY(0); opacity:1;}
-}
-
-@keyframes pop {
-    0% {transform: scale(0.5);}
-    100% {transform: scale(1);}
+    from {opacity:0; transform:translateY(40px);}
+    to {opacity:1; transform:translateY(0);}
 }
 
 </style>
@@ -149,14 +146,14 @@ button:hover {
 
 <body>
 
-<header>🚌 Animated Bus Booking</header>
+<header>🚌 SmartBus Pro</header>
 
 <div class="container">
 
 <!-- LOGIN -->
 <div class="card" id="auth">
     <h3>Login</h3>
-    <input id="username" placeholder="Enter username">
+    <input id="username" placeholder="Enter name">
     <button onclick="login()">Login</button>
 </div>
 
@@ -172,11 +169,19 @@ button:hover {
 <div class="card hidden" id="busList"></div>
 
 <!-- SEATS -->
-<div class="card seat-layout" id="seatLayout">
+<div class="card hidden" id="seatLayout">
     <h3>Select Seats</h3>
+
+    <div class="legend">
+        <div><span class="seat"></span> Available</div>
+        <div><span class="seat selected"></span> Selected</div>
+        <div><span class="seat booked"></span> Booked</div>
+    </div>
+
     <div id="seats"></div>
+
     <p>Total: ₹<span id="total">0</span></p>
-    <button onclick="book()">Book Now</button>
+    <button onclick="book()">Confirm Booking</button>
 </div>
 
 <!-- TICKET -->
@@ -202,26 +207,29 @@ if(user){
 }
 
 function login(){
-    let u = username.value;
-    if(!u) return alert("Enter username");
-    localStorage.setItem("user", u);
+    if(!username.value) return alert("Enter name");
+    localStorage.setItem("user", username.value);
     location.reload();
 }
 
 function searchBus(){
     let buses = [
-        {name:"Express", time:"6AM", price:300},
-        {name:"Super Deluxe", time:"10AM", price:400}
+        {name:"Express", time:"6 AM", price:300},
+        {name:"Super Deluxe", time:"10 AM", price:400},
+        {name:"Sleeper", time:"10 PM", price:600}
     ];
 
-    busList.innerHTML="<h3>Buses</h3>";
+    busList.innerHTML="<h3>Available Buses</h3>";
     busList.classList.remove("hidden");
 
     buses.forEach(b=>{
         let div=document.createElement("div");
         div.className="bus";
         div.innerHTML=`
-            <div>${b.name} - ${b.time} - ₹${b.price}</div>
+            <div>
+                <b>${b.name}</b><br>
+                ${b.time} | ₹${b.price}
+            </div>
             <button onclick="selectBus(${b.price})">Select</button>
         `;
         busList.appendChild(div);
@@ -230,7 +238,7 @@ function searchBus(){
 
 function selectBus(p){
     price=p;
-    seatLayout.style.display="block";
+    seatLayout.classList.remove("hidden");
     renderSeats();
 }
 
@@ -265,17 +273,19 @@ function createSeat(num){
         s.classList.toggle("selected");
 
         if(selectedSeats.includes(num)){
-            selectedSeats=selectedSeats.filter(x=>x!==num);
-        } else selectedSeats.push(num);
+            selectedSeats = selectedSeats.filter(x=>x!==num);
+        } else {
+            selectedSeats.push(num);
+        }
 
-        total.innerText=selectedSeats.length*price;
+        total.innerText = selectedSeats.length * price;
     };
 
     return s;
 }
 
 function book(){
-    if(selectedSeats.length===0) return alert("Select seats");
+    if(selectedSeats.length===0) return alert("Select seats!");
 
     let data={
         id:"T"+Date.now(),
@@ -303,21 +313,22 @@ function showTicket(d){
     ticket.classList.remove("hidden");
     ticket.innerHTML=`
     <div class="ticket">
-    <h3>🎟 Ticket</h3>
+    <h3>🎟 Ticket Confirmed</h3>
+    ID: ${d.id}<br>
     ${d.from} → ${d.to}<br>
     Seats: ${d.seats.join(", ")}<br>
-    ₹${d.total}
+    Total: ₹${d.total}
     </div>`;
 }
 
 function showHistory(){
-    historyDiv=history;
     historyEl=document.getElementById("history");
     historyEl.classList.remove("hidden");
 
-    historyEl.innerHTML="<h3>History</h3>";
+    historyEl.innerHTML="<h3>📜 Booking History</h3>";
     history.forEach(h=>{
-        historyEl.innerHTML+=`<p>${h.id} | ${h.from}→${h.to} | ₹${h.total}</p>`;
+        historyEl.innerHTML+=`
+        <p>${h.id} | ${h.from}→${h.to} | ₹${h.total}</p>`;
     });
 }
 
