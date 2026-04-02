@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Animated Bus Booking</title>
+
+<style>
+body {
+    margin:0;
+    font-family:'Segoe UI';
+    background:#eef2f7;
+}
+
+/* HEADER */
+header {
+    background:#1e2a38;
+    color:white;
+    padding:15px;
+    text-align:center;
+    font-size:24px;
+    animation: slideDown 0.8s ease;
+}
+
+/* CONTAINER */
+.container {
+    width:90%;
+    margin:auto;
+    margin-top:20px;
+}
+
+/* CARD */
+.card {
+    background:white;
+    padding:15px;
+    border-radius:12px;
+    margin-bottom:20px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
+    animation: fadeIn 0.8s ease;
+}
+
+/* INPUTS */
+input,button {
+    padding:10px;
+    margin:5px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+
+/* BUTTON */
+button {
+    background:#3498db;
+    color:white;
+    cursor:pointer;
+    transition: all 0.3s ease;
+}
+button:hover {
+    background:#2980b9;
+    transform: scale(1.05);
+}
+
+/* BUS CARD */
+.bus {
+    display:flex;
+    justify-content:space-between;
+    padding:12px;
+    border-bottom:1px solid #eee;
+    transition:0.3s;
+}
+.bus:hover {
+    background:#f0f8ff;
+    transform: translateX(5px);
+}
+
+/* SEATS */
+.seat-layout { display:none; }
+
+.row {
+    display:flex;
+    justify-content:center;
+    margin:5px;
+}
+
+.seat {
+    width:40px;
+    height:40px;
+    margin:4px;
+    background:#ddd;
+    text-align:center;
+    line-height:40px;
+    border-radius:6px;
+    cursor:pointer;
+    transition: all 0.3s ease;
+}
+
+/* Seat Animations */
+.seat:hover {
+    transform: scale(1.2);
+}
+
+.selected {
+    background:green;
+    color:white;
+    animation: pop 0.3s ease;
+}
+
+.booked {
+    background:red;
+    color:white;
+}
+
+.aisle {
+    width:20px;
+}
+
+/* TICKET */
+.ticket {
+    background:#dff9fb;
+    padding:15px;
+    border-radius:10px;
+    animation: slideUp 0.5s ease;
+}
+
+/* HISTORY */
+.hidden { display:none; }
+
+/* ANIMATIONS */
+@keyframes fadeIn {
+    from {opacity:0;}
+    to {opacity:1;}
+}
+
+@keyframes slideDown {
+    from {transform:translateY(-50px); opacity:0;}
+    to {transform:translateY(0); opacity:1;}
+}
+
+@keyframes slideUp {
+    from {transform:translateY(50px); opacity:0;}
+    to {transform:translateY(0); opacity:1;}
+}
+
+@keyframes pop {
+    0% {transform: scale(0.5);}
+    100% {transform: scale(1);}
+}
+
+</style>
+</head>
+
+<body>
+
+<header>🚌 Animated Bus Booking</header>
+
+<div class="container">
+
+<!-- LOGIN -->
+<div class="card" id="auth">
+    <h3>Login</h3>
+    <input id="username" placeholder="Enter username">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- SEARCH -->
+<div class="card hidden" id="searchBox">
+    <input id="from" placeholder="From">
+    <input id="to" placeholder="To">
+    <input type="date" id="date">
+    <button onclick="searchBus()">Search</button>
+</div>
+
+<!-- BUS LIST -->
+<div class="card hidden" id="busList"></div>
+
+<!-- SEATS -->
+<div class="card seat-layout" id="seatLayout">
+    <h3>Select Seats</h3>
+    <div id="seats"></div>
+    <p>Total: ₹<span id="total">0</span></p>
+    <button onclick="book()">Book Now</button>
+</div>
+
+<!-- TICKET -->
+<div class="card hidden" id="ticket"></div>
+
+<!-- HISTORY -->
+<div class="card hidden" id="history"></div>
+
+</div>
+
+<script>
+
+let user = localStorage.getItem("user");
+let bookedSeats = JSON.parse(localStorage.getItem("bookedSeats")) || [];
+let history = JSON.parse(localStorage.getItem("history")) || [];
+let selectedSeats = [];
+let price = 300;
+
+if(user){
+    auth.classList.add("hidden");
+    searchBox.classList.remove("hidden");
+    showHistory();
+}
+
+function login(){
+    let u = username.value;
+    if(!u) return alert("Enter username");
+    localStorage.setItem("user", u);
+    location.reload();
+}
+
+function searchBus(){
+    let buses = [
+        {name:"Express", time:"6AM", price:300},
+        {name:"Super Deluxe", time:"10AM", price:400}
+    ];
+
+    busList.innerHTML="<h3>Buses</h3>";
+    busList.classList.remove("hidden");
+
+    buses.forEach(b=>{
+        let div=document.createElement("div");
+        div.className="bus";
+        div.innerHTML=`
+            <div>${b.name} - ${b.time} - ₹${b.price}</div>
+            <button onclick="selectBus(${b.price})">Select</button>
+        `;
+        busList.appendChild(div);
+    });
+}
+
+function selectBus(p){
+    price=p;
+    seatLayout.style.display="block";
+    renderSeats();
+}
+
+function renderSeats(){
+    seats.innerHTML="";
+    for(let i=1;i<=20;i+=4){
+        let row=document.createElement("div");
+        row.className="row";
+
+        for(let j=0;j<2;j++) row.appendChild(createSeat(i+j));
+
+        let aisle=document.createElement("div");
+        aisle.className="aisle";
+        row.appendChild(aisle);
+
+        for(let j=2;j<4;j++) row.appendChild(createSeat(i+j));
+
+        seats.appendChild(row);
+    }
+}
+
+function createSeat(num){
+    let s=document.createElement("div");
+    s.className="seat";
+    s.innerText=num;
+
+    if(bookedSeats.includes(num)) s.classList.add("booked");
+
+    s.onclick=()=>{
+        if(s.classList.contains("booked")) return;
+
+        s.classList.toggle("selected");
+
+        if(selectedSeats.includes(num)){
+            selectedSeats=selectedSeats.filter(x=>x!==num);
+        } else selectedSeats.push(num);
+
+        total.innerText=selectedSeats.length*price;
+    };
+
+    return s;
+}
+
+function book(){
+    if(selectedSeats.length===0) return alert("Select seats");
+
+    let data={
+        id:"T"+Date.now(),
+        from:from.value,
+        to:to.value,
+        seats:selectedSeats,
+        total:selectedSeats.length*price
+    };
+
+    bookedSeats.push(...selectedSeats);
+    localStorage.setItem("bookedSeats", JSON.stringify(bookedSeats));
+
+    history.push(data);
+    localStorage.setItem("history", JSON.stringify(history));
+
+    showTicket(data);
+    showHistory();
+
+    selectedSeats=[];
+    renderSeats();
+    total.innerText=0;
+}
+
+function showTicket(d){
+    ticket.classList.remove("hidden");
+    ticket.innerHTML=`
+    <div class="ticket">
+    <h3>🎟 Ticket</h3>
+    ${d.from} → ${d.to}<br>
+    Seats: ${d.seats.join(", ")}<br>
+    ₹${d.total}
+    </div>`;
+}
+
+function showHistory(){
+    historyDiv=history;
+    historyEl=document.getElementById("history");
+    historyEl.classList.remove("hidden");
+
+    historyEl.innerHTML="<h3>History</h3>";
+    history.forEach(h=>{
+        historyEl.innerHTML+=`<p>${h.id} | ${h.from}→${h.to} | ₹${h.total}</p>`;
+    });
+}
+
+</script>
+
+</body>
+</html>
